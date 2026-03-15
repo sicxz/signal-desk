@@ -13,8 +13,9 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "AI-Info Hub",
-  description: "A compact live AI news hub with adaptive ranking and desk filters.",
+  title: "Signal Desk // AI-Info Hub",
+  description:
+    "Signal Desk's AI-Info Hub is a compact live AI briefing with adaptive ranking, desk filters, and story synopses.",
 };
 
 export default function RootLayout({

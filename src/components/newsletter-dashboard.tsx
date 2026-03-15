@@ -1096,7 +1096,7 @@ export function NewsletterDashboard() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f6f8fa]">
         <div className="rounded-md border border-[#d0d7de] bg-white px-4 py-2 text-sm text-[#57606a] shadow-sm">
-          Loading AI-Info Hub...
+          Loading Signal Desk // AI-Info Hub...
         </div>
       </div>
     );
@@ -1108,6 +1108,9 @@ export function NewsletterDashboard() {
         <div className="px-4 py-2.5 sm:px-6 xl:px-8">
           <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
+              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[#57606a]">
+                Signal Desk
+              </p>
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-[1.45rem] font-semibold tracking-[-0.03em] text-[#1f2328]">
                   AI-Info Hub
@@ -1120,7 +1123,7 @@ export function NewsletterDashboard() {
                 </span>
               </div>
               <p className="mt-0.5 text-sm text-[#57606a]">
-                Compact AI news with adaptive ranking, desk filters, and tutorial coverage.
+                The AI hub inside Signal Desk, with adaptive ranking, desk filters, and tutorial coverage.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xs text-[#57606a]">
