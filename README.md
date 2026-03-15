@@ -18,6 +18,38 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## Ingestion
+
+The app pulls articles from configured RSS/API sources, summarizes them with Claude, and stores them as events.
+
+**Local run:** From the project root with `.env.local` (or env) set:
+
+- `API_KEY` – project API key (from Supabase `projects.api_key`)
+- `ANTHROPIC_API_KEY` – for summarization
+- `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+
+```bash
+node scripts/ingest.js
+```
+
+Optional: `BASE_URL` (default `http://localhost:3000`) – set to your deployed app URL when ingesting into production.
+
+**Daily run:** The workflow `.github/workflows/daily-ingest.yml` runs once per day (noon UTC) and on manual trigger. In the repo’s GitHub Settings → Secrets and variables → Actions, add:
+
+- `API_KEY`
+- `ANTHROPIC_API_KEY`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `BASE_URL` (your production app URL, e.g. `https://your-app.vercel.app`)
+
+**System cron (optional):** To run ingest from a server instead of GitHub Actions:
+
+```bash
+0 12 * * * cd /path/to/events-dashboard && node scripts/ingest.js
+```
+
+Ensure the same env vars are available to the cron environment (e.g. in a small wrapper script that sources `.env.local` or exports them).
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
