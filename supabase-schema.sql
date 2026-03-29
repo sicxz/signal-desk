@@ -57,7 +57,7 @@ create table sources (
   id uuid default gen_random_uuid() primary key,
   name text not null,
   url text not null,
-  type text not null check (type in ('rss', 'api')),
+  type text not null check (type in ('rss', 'api', 'email')),
   tag text not null,
   active boolean default true not null,
   created_at timestamptz default now() not null
@@ -83,6 +83,12 @@ create policy "Allow service role full access to sources"
   on sources for all
   using (true);
 
+-- Existing projects can run this block to allow email-based newsletter sources.
+alter table sources drop constraint if exists sources_type_check;
+alter table sources
+  add constraint sources_type_check
+  check (type in ('rss', 'api', 'email'));
+
 -- Add topic column to events (AI-extracted during ingestion)
 alter table events add column topic text;
 
@@ -102,10 +108,10 @@ insert into sources (name, url, type, tag) values
   ('Dev.to AI', 'https://dev.to/api/articles?per_page=20&tag=ai', 'api', 'ai'),
   ('HackerNoon AI', 'https://hackernoon.com/tagged/ai/feed', 'rss', 'ai'),
   ('404 Media', 'https://www.404media.co/rss/', 'rss', 'tech'),
-  ('Critical Playground', 'https://criticalplayground.org/feed', 'rss', 'tech'),
+  ('Critical Playground', 'https://criticalplayground.org/latest/rss/', 'rss', 'tech'),
   ('The Curiosity Department', 'https://thecuriositydepartment.substack.com/feed', 'rss', 'design'),
   ('Bytes (Fireship)', 'https://bytes-rss.onrender.com/feed', 'rss', 'ai'),
   ('The Batch (DeepLearning.AI)', 'https://www.deeplearning.ai/the-batch/feed', 'rss', 'ai'),
   ('Ben''s Bites', 'https://bensbites.substack.com/feed', 'rss', 'ai'),
   ('Future Tools', 'https://futuretools.beehiiv.com/feed', 'rss', 'ai'),
-  ('The Neuron Daily', 'https://www.theneurondaily.com/feed', 'rss', 'ai');
+  ('The Neuron Daily', 'https://rss.beehiiv.com/feeds/N4eCstxvgX.xml', 'rss', 'ai');

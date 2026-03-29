@@ -101,6 +101,7 @@ Create `.env.local` with the values needed for the app and ingest pipeline.
 App and API access:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
 Ingestion and enrichment:
@@ -109,9 +110,26 @@ Ingestion and enrichment:
 - `ANTHROPIC_API_KEY`
 - `BASE_URL` optional, defaults to `http://localhost:3000`
 
+Optional IMAP newsletter ingest:
+
+- `EMAIL_INGEST_HOST`
+- `EMAIL_INGEST_PORT` optional, defaults to `993`
+- `EMAIL_INGEST_SECURE` optional, defaults to `true`
+- `EMAIL_INGEST_USER`
+- `EMAIL_INGEST_PASSWORD`
+- `EMAIL_INGEST_MAILBOX` optional, defaults to `INBOX`
+- `EMAIL_INGEST_LOOKBACK_DAYS` optional, defaults to `7`
+- `EMAIL_INGEST_MAX_MESSAGES` optional, defaults to `10`
+
+If you add or change these in Vercel, redeploy the project so the new values are applied.
+For existing Supabase projects, apply [supabase/migrations/20260327_add_email_sources.sql](/Users/tmasingale/Documents/GitHub/flavio/signal-desk/supabase/migrations/20260327_add_email_sources.sql) before creating `Email` sources.
+For Gmail IMAP with 2FA enabled, `EMAIL_INGEST_PASSWORD` must be a Gmail App Password rather than your normal account password.
+
 ## Ingestion
 
-The ingest pipeline pulls from configured RSS/API sources, deduplicates content, enriches stories with AI-generated editorial fields, and writes them into the `events` table.
+The ingest pipeline pulls from configured `rss`, `api`, and optional `email` sources, deduplicates content, enriches stories with AI-generated editorial fields, and writes them into the `events` table.
+
+Email sources use one shared IMAP inbox. Add a source in the UI with type `Email` and use the sender address as the locator, for example `newsletter@example.com`. The app stores that as `mailto:newsletter@example.com` and matches messages from that sender inside the configured inbox.
 
 Enrichment currently generates:
 
@@ -131,6 +149,31 @@ Run ingestion locally:
 npm run ingest
 ```
 
+Seed source records:
+
+```bash
+npm run seed:email-sources
+npm run seed:rss-sources
+```
+
+Or seed both sets together:
+
+```bash
+npm run seed:sources
+```
+
+Or run the one-shot newsletter setup flow:
+
+```bash
+npm run setup:newsletters
+```
+
+If your ingest env is already configured and you want setup to immediately pull content too:
+
+```bash
+npm run setup:newsletters:ingest
+```
+
 Optional backfill mode enriches existing events that are missing synopsis or image data:
 
 ```bash
@@ -141,7 +184,7 @@ BACKFILL=1 BACKFILL_LIMIT=150 node scripts/ingest.js
 
 GitHub Actions:
 
-- `.github/workflows/daily-ingest.yml` runs the ingest job daily and on manual trigger
+- [.github/workflows/daily-ingest.yml](/Users/tmasingale/Documents/GitHub/flavio/signal-desk/.github/workflows/daily-ingest.yml) runs the ingest job every 6 hours and on manual trigger
 
 Required GitHub Actions secrets:
 
@@ -150,11 +193,19 @@ Required GitHub Actions secrets:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `BASE_URL`
+- `EMAIL_INGEST_HOST`
+- `EMAIL_INGEST_PORT`
+- `EMAIL_INGEST_SECURE`
+- `EMAIL_INGEST_USER`
+- `EMAIL_INGEST_PASSWORD`
+- `EMAIL_INGEST_MAILBOX`
+- `EMAIL_INGEST_LOOKBACK_DAYS`
+- `EMAIL_INGEST_MAX_MESSAGES`
 
 Optional system cron:
 
 ```bash
-0 12 * * * cd /path/to/signal-desk && node scripts/ingest.js
+0 */6 * * * cd /path/to/signal-desk && npm run ingest
 ```
 
 ## Product Direction

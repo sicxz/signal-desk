@@ -3,6 +3,40 @@
 import { useEffect, useState } from "react";
 import { Source } from "@/lib/types";
 
+type SourceType = "rss" | "api" | "email";
+
+function isEmailSource(source: Pick<Source, "type" | "url">) {
+  return source.type === "email" || source.url.startsWith("mailto:");
+}
+
+function getLocatorLabel(type: SourceType) {
+  return type === "email" ? "Sender Email" : "URL";
+}
+
+function getLocatorPlaceholder(type: SourceType) {
+  if (type === "email") {
+    return "newsletter@example.com";
+  }
+
+  if (type === "rss") {
+    return "https://example.com/feed.xml";
+  }
+
+  return "https://dev.to/api/articles?per_page=20&tag=ai";
+}
+
+function displaySourceLocator(source: Source) {
+  if (isEmailSource(source)) {
+    return source.url.replace(/^mailto:/i, "");
+  }
+
+  return source.url;
+}
+
+function displaySourceType(source: Source) {
+  return isEmailSource(source) ? "EMAIL" : source.type.toUpperCase();
+}
+
 export default function SourcesPage() {
   const [sources, setSources] = useState<Source[]>([]);
   const [loading, setLoading] = useState(true);
@@ -10,7 +44,7 @@ export default function SourcesPage() {
   const [formData, setFormData] = useState({
     name: "",
     url: "",
-    type: "api" as "rss" | "api",
+    type: "api" as SourceType,
     tag: "",
   });
   const [submitting, setSubmitting] = useState(false);
@@ -132,18 +166,23 @@ export default function SourcesPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#1f2328] mb-1">
-                  URL
+                  {getLocatorLabel(formData.type)}
                 </label>
                 <input
-                  type="url"
+                  type={formData.type === "email" ? "email" : "url"}
                   required
                   value={formData.url}
                   onChange={(e) =>
                     setFormData({ ...formData, url: e.target.value })
                   }
-                  placeholder="https://dev.to/api/articles?per_page=20&tag=ai"
+                  placeholder={getLocatorPlaceholder(formData.type)}
                   className="w-full px-3 py-1.5 text-sm bg-[#f6f8fa] border border-[#d1d9e0] rounded-md text-[#1f2328] placeholder-[#656d76] focus:outline-none focus:ring-2 focus:ring-[#0969da] focus:border-[#0969da]"
                 />
+                {formData.type === "email" && (
+                  <p className="mt-1 text-xs text-[#656d76]">
+                    Matches newsletter emails by sender inside the IMAP inbox configured in env.
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#1f2328] mb-1">
@@ -154,13 +193,14 @@ export default function SourcesPage() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      type: e.target.value as "rss" | "api",
+                      type: e.target.value as SourceType,
                     })
                   }
                   className="w-full px-3 py-1.5 text-sm bg-[#f6f8fa] border border-[#d1d9e0] rounded-md text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da] focus:border-[#0969da]"
                 >
                   <option value="api">API</option>
                   <option value="rss">RSS</option>
+                  <option value="email">Email</option>
                 </select>
               </div>
               <div>
@@ -229,12 +269,12 @@ export default function SourcesPage() {
                     </td>
                     <td className="px-4 py-3 text-[#656d76] hidden sm:table-cell">
                       <span className="truncate block max-w-[280px]">
-                        {source.url}
+                        {displaySourceLocator(source)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-[#ddf4ff] text-[#0969da]">
-                        {source.type.toUpperCase()}
+                        {displaySourceType(source)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-[#656d76]">{source.tag}</td>

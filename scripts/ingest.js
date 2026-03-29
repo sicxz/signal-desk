@@ -19,6 +19,12 @@
 
 const { createClient } = require("@supabase/supabase-js");
 const crypto = require("crypto");
+const {
+  closeEmailClient,
+  fetchArticlesFromEmailSource,
+  getMissingEmailEnvVars,
+  isEmailIngestConfigured,
+} = require("./email-source");
 
 // Load .env.local for Supabase credentials
 const fs = require("fs");
@@ -63,6 +69,10 @@ function contentHash(title, url) {
 }
 
 async function fetchArticlesFromSource(source) {
+  if (source.type === "email" || String(source.url || "").startsWith("mailto:")) {
+    return fetchArticlesFromEmailSource(source);
+  }
+
   if (source.type === "rss") {
     const RSSParser = require("rss-parser");
     const parser = new RSSParser({
@@ -72,8 +82,17 @@ async function fetchArticlesFromSource(source) {
           ["media:thumbnail", "mediaThumbnail", { keepArray: false }],
         ],
       },
+      headers: { "User-Agent": "FlavioBot/1.0" },
+      timeout: 10000,
     });
-    const feed = await parser.parseURL(source.url);
+    const res = await fetch(source.url, {
+      headers: { "User-Agent": "FlavioBot/1.0" },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) throw new Error(`RSS fetch failed: ${res.status}`);
+    const xml = await res.text();
+    const sanitizedXml = xml.replace(/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[\da-fA-F]+);)/g, "&amp;");
+    const feed = await parser.parseString(sanitizedXml);
     return feed.items.map((item) => ({
       title: item.title || "Untitled",
       url: item.link || "",
@@ -270,13 +289,13 @@ async function seedDefaultSources() {
     { name: "Dev.to AI", url: "https://dev.to/api/articles?per_page=20&tag=ai", type: "api", tag: "ai" },
     { name: "HackerNoon AI", url: "https://hackernoon.com/tagged/ai/feed", type: "rss", tag: "ai" },
     { name: "404 Media", url: "https://www.404media.co/rss/", type: "rss", tag: "tech" },
-    { name: "Critical Playground", url: "https://criticalplayground.org/feed", type: "rss", tag: "tech" },
+    { name: "Critical Playground", url: "https://criticalplayground.org/latest/rss/", type: "rss", tag: "tech" },
     { name: "The Curiosity Department", url: "https://thecuriositydepartment.substack.com/feed", type: "rss", tag: "design" },
     { name: "Bytes (Fireship)", url: "https://bytes-rss.onrender.com/feed", type: "rss", tag: "ai" },
     { name: "The Batch (DeepLearning.AI)", url: "https://www.deeplearning.ai/the-batch/feed", type: "rss", tag: "ai" },
     { name: "Ben's Bites", url: "https://bensbites.substack.com/feed", type: "rss", tag: "ai" },
     { name: "Future Tools", url: "https://futuretools.beehiiv.com/feed", type: "rss", tag: "ai" },
-    { name: "The Neuron Daily", url: "https://www.theneurondaily.com/feed", type: "rss", tag: "ai" },
+    { name: "The Neuron Daily", url: "https://rss.beehiiv.com/feeds/N4eCstxvgX.xml", type: "rss", tag: "ai" },
   ]);
   if (error) {
     console.error("Failed to seed sources:", error.message);
@@ -308,6 +327,20 @@ async function main() {
 
   console.log(`Found ${sources.length} active source(s).\n`);
 
+  const emailSourcesConfigured = isEmailIngestConfigured();
+  if (!emailSourcesConfigured) {
+    const hasEmailSources = (sources || []).some(
+      (source) =>
+        source.type === "email" || String(source.url || "").startsWith("mailto:")
+    );
+
+    if (hasEmailSources) {
+      console.log(
+        `Email ingest not configured. Skipping email sources until these env vars are set: ${getMissingEmailEnvVars().join(", ")}.\n`
+      );
+    }
+  }
+
   // 2. Get existing content hashes for dedup
   const { data: existingEvents } = await supabase
     .from("events")
@@ -326,6 +359,15 @@ async function main() {
 
   // 3. Process each source
   for (const source of sources) {
+    const isEmailSource =
+      source.type === "email" || String(source.url || "").startsWith("mailto:");
+
+    if (isEmailSource && !emailSourcesConfigured) {
+      console.log(`--- ${source.name} (email) ---`);
+      console.log("  Skipped: email ingest environment is not configured.");
+      continue;
+    }
+
     console.log(`--- ${source.name} (${source.type}) ---`);
 
     let articles;
@@ -426,4 +468,11 @@ async function main() {
   );
 }
 
-main();
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await closeEmailClient();
+  });

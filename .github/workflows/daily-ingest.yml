@@ -1,8 +1,8 @@
-name: Daily ingest
+name: Scheduled ingest
 
 on:
   schedule:
-    - cron: "0 12 * * *"
+    - cron: "0 */6 * * *"
   workflow_dispatch:
 
 jobs:
@@ -25,4 +25,12 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           BASE_URL: ${{ secrets.BASE_URL }}
-        run: node scripts/ingest.js
+          EMAIL_INGEST_HOST: ${{ secrets.EMAIL_INGEST_HOST }}
+          EMAIL_INGEST_PORT: ${{ secrets.EMAIL_INGEST_PORT }}
+          EMAIL_INGEST_SECURE: ${{ secrets.EMAIL_INGEST_SECURE }}
+          EMAIL_INGEST_USER: ${{ secrets.EMAIL_INGEST_USER }}
+          EMAIL_INGEST_PASSWORD: ${{ secrets.EMAIL_INGEST_PASSWORD }}
+          EMAIL_INGEST_MAILBOX: ${{ secrets.EMAIL_INGEST_MAILBOX }}
+          EMAIL_INGEST_LOOKBACK_DAYS: ${{ secrets.EMAIL_INGEST_LOOKBACK_DAYS }}
+          EMAIL_INGEST_MAX_MESSAGES: ${{ secrets.EMAIL_INGEST_MAX_MESSAGES }}
+        run: npm run ingest

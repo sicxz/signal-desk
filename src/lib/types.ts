@@ -25,7 +25,7 @@ export interface Source {
   id: string;
   name: string;
   url: string;
-  type: "rss" | "api";
+  type: "rss" | "api" | "email";
   tag: string;
   active: boolean;
   created_at: string;

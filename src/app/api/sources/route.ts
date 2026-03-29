@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function normalizeSourceLocator(rawValue: string, type: string) {
+  const value = rawValue.trim();
+
+  if (type === "email") {
+    const email = value.replace(/^mailto:/i, "").split("?")[0].trim().toLowerCase();
+    if (!EMAIL_PATTERN.test(email)) {
+      return { error: "email sources must use a sender email address" };
+    }
+    return { value: `mailto:${email}` };
+  }
+
+  try {
+    const parsed = new URL(value);
+    return { value: parsed.toString() };
+  } catch {
+    return { error: "rss/api sources must use a valid URL" };
+  }
+}
+
 export async function GET() {
   const { data, error } = await supabaseAdmin
     .from("sources")
@@ -34,18 +55,35 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (type !== "rss" && type !== "api") {
+  if (type !== "rss" && type !== "api" && type !== "email") {
     return NextResponse.json(
-      { error: "type must be 'rss' or 'api'" },
+      { error: "type must be 'rss', 'api', or 'email'" },
       { status: 400 }
     );
   }
 
-  const { data, error } = await supabaseAdmin
+  const locator = normalizeSourceLocator(url, type);
+  if (locator.error) {
+    return NextResponse.json({ error: locator.error }, { status: 400 });
+  }
+
+  let { data, error } = await supabaseAdmin
     .from("sources")
-    .insert({ name, url, type, tag })
+    .insert({ name: name.trim(), url: locator.value, type, tag: tag.trim() })
     .select()
     .single();
+
+  if (
+    error &&
+    type === "email" &&
+    /violates check constraint "sources_type_check"/i.test(error.message)
+  ) {
+    ({ data, error } = await supabaseAdmin
+      .from("sources")
+      .insert({ name: name.trim(), url: locator.value, type: "api", tag: tag.trim() })
+      .select()
+      .single());
+  }
 
   if (error) {
     return NextResponse.json(

@@ -7,11 +7,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "ingest": "node scripts/ingest.js"
+    "ingest": "node scripts/ingest.js",
+    "seed:email-sources": "node scripts/seed-email-sources.js",
+    "seed:rss-sources": "node scripts/seed-rss-sources.js",
+    "seed:sources": "npm run seed:email-sources && npm run seed:rss-sources",
+    "setup:newsletters": "node scripts/setup-newsletters.js",
+    "setup:newsletters:ingest": "node scripts/setup-newsletters.js --ingest"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
     "@supabase/supabase-js": "^2.99.1",
+    "imapflow": "^1.2.18",
+    "mailparser": "^3.9.0",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
