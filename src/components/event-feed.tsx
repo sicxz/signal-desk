@@ -1,5 +1,6 @@
 "use client";
 
+import { getEventSourceName } from "@/lib/feed";
 import { Event } from "@/lib/types";
 import { timeAgo } from "@/lib/utils";
 
@@ -30,6 +31,9 @@ export function EventFeed({ events }: { events: Event[] }) {
                 <h3 className="font-medium text-gray-900 truncate">
                   {event.title}
                 </h3>
+                <p className="mt-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                  {getEventSourceName(event)}
+                </p>
                 {event.description && (
                   <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">
                     {event.description}

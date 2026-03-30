@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import { NewsletterDashboard } from "@/components/newsletter-dashboard";
 
 export default function DashboardPage() {
-  return <NewsletterDashboard />;
+  return (
+    <Suspense fallback={null}>
+      <NewsletterDashboard />
+    </Suspense>
+  );
 }

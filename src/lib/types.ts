@@ -1,3 +1,14 @@
+export type SourceType = "rss" | "api" | "email";
+
+export interface EventSource {
+  id: string;
+  name: string;
+  url: string;
+  type: SourceType;
+  tag: string;
+  active?: boolean;
+}
+
 export interface Event {
   id: string;
   project_id: string;
@@ -19,13 +30,14 @@ export interface Event {
   catch: string | null;
   why_care: string | null;
   image_url: string | null;
+  source?: EventSource | null;
 }
 
 export interface Source {
   id: string;
   name: string;
   url: string;
-  type: "rss" | "api" | "email";
+  type: SourceType;
   tag: string;
   active: boolean;
   created_at: string;
